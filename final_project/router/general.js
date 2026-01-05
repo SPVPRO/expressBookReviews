@@ -5,7 +5,10 @@ let users = require("./auth_users.js").users;
 const public_users = express.Router();
 const axios = require('axios');
 
-// Helper function to check if user exists
+/**
+ * Helper function to check if a username already exists in the users array.
+ * This is used during the registration process.
+ */
 const doesExist = (username) => {
     let userswithsamename = users.filter((user) => {
         return user.username === username;
@@ -13,7 +16,7 @@ const doesExist = (username) => {
     return userswithsamename.length > 0;
 };
 
-// Task 6: Register a user
+// Task 6: Register a new user
 public_users.post("/register", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -29,9 +32,11 @@ public_users.post("/register", (req, res) => {
     return res.status(404).json({ message: "Unable to register user: Provide username and password." }); 
 });
 
-// Task 10: Get the book list available in the shop using Async-Await
+// Task 10: Get the list of all books available in the shop
+// Refactored to use Async-Await to handle the data retrieval asynchronously
 public_users.get('/', async function (req, res) {
     try {
+        // Wrapping the local 'books' data in a Promise to simulate an asynchronous API call
         const getBooks = () => Promise.resolve(books);
         const bookList = await getBooks();
         res.status(200).send(JSON.stringify(bookList, null, 4));
@@ -40,9 +45,12 @@ public_users.get('/', async function (req, res) {
     }
 });
 
-// Task 11: Get book details based on ISBN using Promises
+// Task 11: Get book details based on ISBN
+// Refactored to use a Promise-based approach
 public_users.get('/isbn/:isbn', function (req, res) {
     const isbn = req.params.isbn;
+    
+    // Creating a new Promise to handle book lookup
     const findBook = new Promise((resolve, reject) => {
         if (books[isbn]) {
             resolve(books[isbn]);
@@ -51,35 +59,42 @@ public_users.get('/isbn/:isbn', function (req, res) {
         }
     });
 
+    // Handling the resolved or rejected promise
     findBook
         .then((book) => res.status(200).json(book))
         .catch((err) => res.status(404).json({message: err}));
 });
   
-// Task 12: Get book details based on author using Async-Await
-public_users.get('/author/:author', async function (req, res) {
+// Task 12: Get book details based on Author
+// Refactored to use Async-Await for searching through the book collection
+public_users.get('/author/:author', async function (req, author_res) {
     const author = req.params.author;
     try {
+        // Await a promise that filters books by the matching author name
         const getBooksByAuthor = await Promise.resolve(
             Object.values(books).filter(b => b.author === author)
         );
+        
         if (getBooksByAuthor.length > 0) {
-            res.status(200).json(getBooksByAuthor);
+            author_res.status(200).json(getBooksByAuthor);
         } else {
-            res.status(404).json({ message: "No books found for this author" });
+            author_res.status(404).json({ message: "No books found for this author" });
         }
     } catch (error) {
-        res.status(500).json({message: "Internal Server Error"});
+        author_res.status(500).json({message: "Internal Server Error"});
     }
 });
 
-// Task 13: Get all books based on title using Async-Await
+// Task 13: Get all books based on Title
+// Refactored to use Async-Await for searching through the book collection
 public_users.get('/title/:title', async function (req, res) {
     const title = req.params.title;
     try {
+        // Await a promise that filters books by the matching title
         const getBooksByTitle = await Promise.resolve(
             Object.values(books).filter(b => b.title === title)
         );
+        
         if (getBooksByTitle.length > 0) {
             res.status(200).json(getBooksByTitle);
         } else {
@@ -90,7 +105,8 @@ public_users.get('/title/:title', async function (req, res) {
     }
 });
 
-// Get book review (Standard route)
+// Get book reviews based on ISBN
+// Standard synchronous route to retrieve nested review objects
 public_users.get('/review/:isbn', function (req, res) {
     const isbn = req.params.isbn;
     const book = books[isbn];
